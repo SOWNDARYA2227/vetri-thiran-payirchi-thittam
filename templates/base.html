@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}PocketSmart: AI Budget Planner{% endblock %}</title>
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/styles.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header>
+    <nav class="navbar">
+      <a href="/" class="brand">
+        <i class="fa-solid fa-wallet brand-icon"></i>
+        <span>PocketSmart</span>
+      </a>
+
+      <ul class="nav-links">
+        {% if user %}
+          <li><a href="/dashboard"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
+          <li><a href="/home-planner"><i class="fa-solid fa-house"></i> Home Planner</a></li>
+          <li><a href="/party-planner"><i class="fa-solid fa-champagne-glasses"></i> Party Planner</a></li>
+          <li><a href="/jewelry-planner"><i class="fa-solid fa-gem"></i> Jewelry Planner</a></li>
+          <li><a href="/history"><i class="fa-solid fa-clock-rotate-left"></i> History</a></li>
+          <li><a href="/logout" class="nav-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+        {% else %}
+          <li><a href="/#features">Features</a></li>
+          <li><a href="/#testimonials">Testimonials</a></li>
+          <li><a href="/login">Sign In</a></li>
+          <li><a href="/register" class="nav-btn">Get Started</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main Body Content -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-col">
+        <div class="brand" style="margin-bottom: 0.75rem;">
+          <i class="fa-solid fa-wallet brand-icon"></i>
+          <span style="color: white; font-weight: 700;">PocketSmart</span>
+        </div>
+        <p style="font-size: 0.85rem; line-height: 1.5; color: #94a3b8; margin-bottom: 1rem;">
+          AI-powered budget planning tools to help you make smarter financial decisions every day.
+        </p>
+        <div style="display: flex; gap: 0.75rem; color: #94a3b8;">
+          <a href="#" style="color: #94a3b8;"><i class="fa-brands fa-facebook"></i></a>
+          <a href="#" style="color: #94a3b8;"><i class="fa-brands fa-twitter"></i></a>
+          <a href="#" style="color: #94a3b8;"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#" style="color: #94a3b8;"><i class="fa-brands fa-linkedin"></i></a>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Our Team</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact Us</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="/home-planner">Home Planner</a></li>
+          <li><a href="/party-planner">Party Planner</a></li>
+          <li><a href="/jewelry-planner">Jewelry Planner</a></li>
+          <li><a href="#">Pricing</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Guides</a></li>
+          <li><a href="#">FAQ</a></li>
+          <li><a href="#">Support</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Cookies Policy</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2025 PocketSmart. All rights reserved.</p>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

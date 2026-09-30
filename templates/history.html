@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Recommendation History - PocketSmart AI{% endblock %}
+
+{% block content %}
+<div class="hero-section" style="margin-top: -2.5rem; margin-left: -1.5rem; margin-right: -1.5rem; padding: 2.5rem 1rem 3rem;">
+  <h1 class="hero-title">Your Recommendation History</h1>
+  <p class="hero-subtitle">
+    View and manage all your previous budget plans and recommendations
+  </p>
+</div>
+
+<div style="margin-top: 2rem;">
+  <h2 style="font-size: 1.5rem; font-weight: 800; color: #1e3c72; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem;">
+    <i class="fa-solid fa-clock-rotate-left"></i> Recent Recommendations
+  </h2>
+
+  {% if history %}
+    <div class="history-grid">
+      {% for item in history %}
+        <div class="history-card">
+          <div class="history-card-header">
+            <span class="history-type-tag">
+              {% if item.recommendation_type == 'jewelry' %}
+                <i class="fa-solid fa-gem tag-jewelry"></i> Jewelry Budget
+              {% elif item.recommendation_type == 'party' %}
+                <i class="fa-solid fa-champagne-glasses tag-party"></i> Party Planning Budget
+              {% else %}
+                <i class="fa-solid fa-house tag-home"></i> Home Interior Budget
+              {% endif %}
+            </span>
+            <span class="history-timestamp">{{ item.timestamp }}</span>
+          </div>
+
+          <div class="history-stats">
+            <div>
+              <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Total Budget</div>
+              <div style="font-size: 1.25rem; font-weight: 800; color: #1e293b;">₹{{ item.summary.total_budget }}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Remaining</div>
+              <div style="font-size: 1.25rem; font-weight: 800; color: #0284c7;">₹{{ item.summary.remaining_budget }}</div>
+            </div>
+          </div>
+
+          <!-- Dynamic Info based on type -->
+          <div style="font-size: 0.9rem; color: #475569; margin-bottom: 1rem; line-height: 1.5; flex: 1;">
+            {% if item.recommendation_type == 'jewelry' %}
+              <p><strong>Occasion:</strong> {{ item.input_summary.get('occasion', 'N/A') }}</p>
+              <p><strong>With outfit image:</strong> {% if item.input_summary.get('has_image') or item.input_summary.get('image') %}Yes{% else %}No{% endif %}</p>
+            {% elif item.recommendation_type == 'party' %}
+              <p><strong>Party Type:</strong> {{ item.input_summary.get('party_type', 'N/A') }}</p>
+              <p><strong>Guests:</strong> {{ item.input_summary.get('num_guests', item.input_summary.get('guests', 'N/A')) }}</p>
+              <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                {% for cat in item.summary.get('categories', []) %}
+                  <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-weight: 600;">{{ cat }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p>
+                <strong>Rooms:</strong> 
+                {% if item.input_summary.get('rooms') %}
+                  {{ item.input_summary.get('rooms')|join(', ') }}
+                {% else %}
+                  {% set r = [] %}
+                  {% if item.input_summary.get('has_living_room') %}{% set _ = r.append('Living Room') %}{% endif %}
+                  {% if item.input_summary.get('has_kitchen') %}{% set _ = r.append('Kitchen') %}{% endif %}
+                  {% if item.input_summary.get('has_bedroom') %}{% set _ = r.append('Bedroom') %}{% endif %}
+                  {{ r|join(', ') or 'General' }}
+                {% endif %}
+              </p>
+              <p>
+                <strong>Lights:</strong> {{ item.input_summary.get('num_lights', 0) }} | 
+                <strong>Fans:</strong> {{ item.input_summary.get('num_fans', 0) }} | 
+                <strong>Furniture:</strong> {{ item.input_summary.get('num_furniture', 0) }}
+              </p>
+              <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                {% for cat in item.summary.get('categories', []) %}
+                  <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-weight: 600;">{{ cat }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <button onclick="viewDetails('{{ item.id }}')" class="btn btn-primary btn-block" style="font-size: 0.9rem; padding: 0.6rem;">
+            <i class="fa-solid fa-eye"></i> View Full Details
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 3rem; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+      <i class="fa-solid fa-clock-rotate-left" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+      <h3 style="color: #1e3c72; font-weight: 700;">No recommendation history yet</h3>
+      <p style="color: #64748b; margin-top: 0.5rem;">Start by creating a new plan using one of our budget planners.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modal for Viewing Details -->
+<div id="detailsModal" class="modal-overlay" onclick="closeDetailsModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div id="modalBody">
+      <div style="text-align: center; padding: 2rem;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: #2563eb;"></i>
+        <p style="margin-top: 0.5rem; color: #64748b;">Loading plan details...</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function viewDetails(id) {
+  const modal = document.getElementById('detailsModal');
+  const body = document.getElementById('modalBody');
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="text-align:center; padding:2rem;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:#2563eb;"></i><p style="margin-top:0.5rem;">Loading plan details...</p></div>';
+
+  try {
+    const res = await fetch(`/recommendation-details/${id}`);
+    if (!res.ok) throw new Error('Details not found');
+    const data = await res.json();
+    renderModalContent(data);
+  } catch (err) {
+    body.innerHTML = `<div style="color:#dc2626; padding:1.5rem; text-align:center;"><i class="fa-solid fa-triangle-exclamation"></i> Error loading details: ${err.message}</div>`;
+  }
+}
+
+function renderModalContent(data) {
+  const body = document.getElementById('modalBody');
+  const full = data.full_result || {};
+  
+  let contentHtml = `
+    <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;">
+      <h2 style="font-size: 1.5rem; font-weight: 800; color: #1e3c72; text-transform: capitalize;">
+        ${data.type} Budget Recommendation Details
+      </h2>
+      <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem;">Created on ${data.timestamp} | ID: <code>${data.id}</code></p>
+      
+      <div style="display: flex; gap: 1.5rem; margin-top: 1rem; background: #f8fafc; padding: 0.75rem 1rem; border-radius: 8px;">
+        <div><strong>Total Budget:</strong> ₹${full.total_budget || data.input.total_budget || 0}</div>
+        <div><strong>Remaining:</strong> <span style="color: #16a34a; font-weight: 700;">₹${full.remaining_budget || 0}</span></div>
+      </div>
+    </div>
+  `;
+
+  // Home or Party Breakdown
+  if (full.budget_breakdown) {
+    contentHtml += `<h3 style="font-size: 1.15rem; font-weight: 700; color: #1e3c72; margin-bottom: 0.75rem;">Budget Items Breakdown</h3>`;
+    full.budget_breakdown.forEach(cat => {
+      contentHtml += `
+        <div style="margin-bottom: 1.25rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <h4 style="color: #2563eb; text-transform: capitalize; margin-bottom: 0.5rem;">${cat.category} (₹${cat.allocation || 0})</h4>
+      `;
+      (cat.items || []).forEach(item => {
+        let links = '';
+        if (item.shopping_links) {
+          for (const [store, link] of Object.entries(item.shopping_links)) {
+            links += `<a href="${link}" target="_blank" class="shop-pill ${store}" style="margin-right:4px;">${store.toUpperCase()}</a>`;
+          }
+        }
+        contentHtml += `
+          <div style="border-top: 1px dashed #cbd5e1; padding-top: 0.5rem; margin-top: 0.5rem;">
+            <div style="display:flex; justify-content:space-between; font-weight:600;">
+              <span>${item.name} (x${item.quantity || 1})</span>
+              <span>₹${item.estimated_price}</span>
+            </div>
+            <p style="font-size:0.85rem; color:#64748b; margin: 0.2rem 0;">${item.description}</p>
+            <div style="margin-top:0.4rem;">${links}</div>
+          </div>
+        `;
+      });
+      contentHtml += `</div>`;
+    });
+  }
+
+  // Jewelry Breakdown
+  if (full.jewelry_recommendations) {
+    contentHtml += `<h3 style="font-size: 1.15rem; font-weight: 700; color: #1e3c72; margin-bottom: 0.75rem;">Recommended Jewelry Items</h3>`;
+    full.jewelry_recommendations.forEach(item => {
+      let links = '';
+      if (item.shopping_links) {
+        for (const [store, link] of Object.entries(item.shopping_links)) {
+          links += `<a href="${link}" target="_blank" class="shop-pill ${store}" style="margin-right:4px;">${store.toUpperCase()}</a>`;
+        }
+      }
+      contentHtml += `
+        <div style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <div style="display:flex; justify-content:space-between; font-weight:700; color:#1e3c72;">
+            <span><i class="fa-solid fa-gem" style="color:#ec4899;"></i> ${item.item_type}</span>
+            <span style="color:#2563eb;">₹${item.estimated_price}</span>
+          </div>
+          <p style="font-size:0.85rem; color:#475569; margin:0.3rem 0;">${item.description}</p>
+          <div style="margin-top:0.5rem;">${links}</div>
+        </div>
+      `;
+    });
+  }
+
+  // Tips / Suggestions
+  const tips = full.styling_tips || full.additional_suggestions;
+  if (tips && tips.length > 0) {
+    contentHtml += `
+      <div style="margin-top: 1.5rem; background: #eff6ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #2563eb;">
+        <h4 style="color: #1e3c72; font-weight: 700; margin-bottom: 0.5rem;"><i class="fa-solid fa-lightbulb"></i> Tips & Suggestions</h4>
+        <ul style="padding-left: 1.2rem; font-size: 0.85rem; color: #334155;">
+          ${tips.map(t => `<li style="margin-bottom:0.25rem;">${t}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  }
+
+  body.innerHTML = contentHtml;
+}
+
+function closeModal() {
+  document.getElementById('detailsModal').style.display = 'none';
+}
+
+function closeDetailsModal(e) {
+  if (e.target.id === 'detailsModal') {
+    closeModal();
+  }
+}
+</script>
+{% endblock %}

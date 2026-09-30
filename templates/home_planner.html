@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Home Interior Budget Planner - PocketSmart AI{% endblock %}
+
+{% block content %}
+<div class="planner-container">
+  <div class="page-header">
+    <h1 class="page-title">Home Interior Budget Planner</h1>
+    <p class="page-desc">Create a customized budget plan for your dream home interior</p>
+  </div>
+
+  <div class="form-box">
+    <form id="homePlannerForm" onsubmit="generateHomeBudget(event)">
+      <!-- Budget Details -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fa-solid fa-dollar-sign" style="color: #2563eb;"></i> Budget Details
+        </h3>
+        <div class="form-group">
+          <label class="form-label" for="total_budget">Total Budget (₹)</label>
+          <div style="position: relative;">
+            <i class="fa-solid fa-money-bill-wave" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+            <input type="number" id="total_budget" name="total_budget" class="form-control" style="padding-left: 2.75rem;" placeholder="e.g. 5000" min="500" step="100" value="5000" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fixtures & Furniture -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fa-solid fa-lightbulb" style="color: #2563eb;"></i> Fixtures & Furniture
+        </h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="num_lights">
+              <i class="fa-solid fa-lightbulb" style="color: #3b82f6;"></i> Number of Lights/Fixtures
+            </label>
+            <input type="number" id="num_lights" name="num_lights" class="form-control" min="0" value="5">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="num_fans">
+              <i class="fa-solid fa-fan" style="color: #3b82f6;"></i> Number of Ceiling Fans
+            </label>
+            <input type="number" id="num_fans" name="num_fans" class="form-control" min="0" value="4">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="num_furniture">
+              <i class="fa-solid fa-couch" style="color: #3b82f6;"></i> Number of Furniture Pieces
+            </label>
+            <input type="number" id="num_furniture" name="num_furniture" class="form-control" min="0" value="2">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="num_dining_tables">
+              <i class="fa-solid fa-utensils" style="color: #3b82f6;"></i> Number of Dining Tables
+            </label>
+            <input type="number" id="num_dining_tables" name="num_dining_tables" class="form-control" min="0" value="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- Rooms to Include -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fa-solid fa-house-chimney" style="color: #2563eb;"></i> Rooms to Include
+        </h3>
+        <div class="checkbox-group">
+          <label class="checkbox-item">
+            <input type="checkbox" id="has_living_room" name="has_living_room" checked>
+            <i class="fa-solid fa-tv" style="color: #2563eb;"></i> Living Room
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="has_kitchen" name="has_kitchen" checked>
+            <i class="fa-solid fa-kitchen-set" style="color: #2563eb;"></i> Kitchen
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="has_bedroom" name="has_bedroom">
+            <i class="fa-solid fa-bed" style="color: #2563eb;"></i> Bedroom
+          </label>
+        </div>
+      </div>
+
+      <!-- Additional Information -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fa-solid fa-clipboard-list" style="color: #2563eb;"></i> Additional Information
+        </h3>
+        <div class="form-group">
+          <label class="form-label" for="additional_requirements">Special Requirements or Preferences</label>
+          <textarea id="additional_requirements" name="additional_requirements" class="form-control" rows="3" placeholder="Any specific requirements or preferences..."></textarea>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn" class="btn btn-primary btn-block" style="font-size: 1.05rem; padding: 0.85rem;">
+        <i class="fa-solid fa-calculator"></i> Generate Recommendations
+      </button>
+    </form>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loadingBox" class="loading-spinner">
+    <div class="spinner"></div>
+    <h3 style="color: #1e3c72; font-weight: 700;">Gemini AI is analyzing your home budget...</h3>
+    <p style="color: #64748b; font-size: 0.9rem;">Allocating costs and selecting Indian e-commerce recommendations</p>
+  </div>
+
+  <!-- Results Section -->
+  <div id="resultsContainer" class="results-container" style="display: none;">
+    <h2 style="text-align: center; font-size: 1.8rem; font-weight: 800; color: #1e3c72; margin-bottom: 1.5rem;">
+      Your Personalized Budget Plan
+    </h2>
+
+    <div class="result-card">
+      <!-- Budget Summary Header -->
+      <div class="result-card-header">
+        <h3 style="font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fa-solid fa-chart-pie"></i> Budget Summary
+        </h3>
+      </div>
+      <div class="budget-stats-bar">
+        <div>Total Budget: <span id="summaryTotal" class="budget-stat-val">₹0</span></div>
+        <div>Remaining Budget: <span id="summaryRemaining" class="budget-stat-val remaining">₹0</span></div>
+      </div>
+
+      <!-- Categories Container -->
+      <div id="categoriesContainer"></div>
+
+      <!-- Calculation Table -->
+      <div class="category-block" style="background: #ffffff;">
+        <h4 style="font-weight: 700; color: #1e3c72; margin-bottom: 0.75rem;">
+          <i class="fa-solid fa-table-list"></i> Budget Allocation Breakdown
+        </h4>
+        <div style="overflow-x: auto;">
+          <table class="items-table" id="calcTable">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Items Count</th>
+                <th>Total Cost</th>
+                <th>% of Budget</th>
+              </tr>
+            </thead>
+            <tbody id="calcTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Additional Suggestions -->
+      <div class="suggestions-box">
+        <div class="suggestions-title">
+          <i class="fa-solid fa-lightbulb"></i> Additional Suggestions
+        </div>
+        <ul id="suggestionsList" class="suggestions-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function generateHomeBudget(e) {
+  e.preventDefault();
+  const loading = document.getElementById('loadingBox');
+  const results = document.getElementById('resultsContainer');
+  const btn = document.getElementById('submitBtn');
+
+  const payload = {
+    total_budget: parseFloat(document.getElementById('total_budget').value),
+    num_lights: parseInt(document.getElementById('num_lights').value) || 0,
+    num_fans: parseInt(document.getElementById('num_fans').value) || 0,
+    num_furniture: parseInt(document.getElementById('num_furniture').value) || 0,
+    num_dining_tables: parseInt(document.getElementById('num_dining_tables').value) || 0,
+    has_living_room: document.getElementById('has_living_room').checked,
+    has_kitchen: document.getElementById('has_kitchen').checked,
+    has_bedroom: document.getElementById('has_bedroom').checked,
+    additional_requirements: document.getElementById('additional_requirements').value
+  };
+
+  loading.style.display = 'block';
+  results.style.display = 'none';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/home-budget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 307) {
+        window.location.href = '/login';
+        return;
+      }
+      throw new Error('Failed to generate budget plan');
+    }
+
+    const data = await res.json();
+    renderHomeResults(data);
+    results.style.display = 'block';
+    results.scrollIntoView({ behavior: 'smooth' });
+  } catch (err) {
+    alert('Error generating recommendations: ' + err.message);
+  } finally {
+    loading.style.display = 'none';
+    btn.disabled = false;
+  }
+}
+
+function renderHomeResults(data) {
+  document.getElementById('summaryTotal').innerText = `₹${data.total_budget.toFixed(2)}`;
+  document.getElementById('summaryRemaining').innerText = `₹${data.remaining_budget.toFixed(2)}`;
+
+  const catContainer = document.getElementById('categoriesContainer');
+  catContainer.innerHTML = '';
+
+  const catIcons = {
+    'lighting': 'fa-lightbulb',
+    'ceiling_fans': 'fa-fan',
+    'fans': 'fa-fan',
+    'furniture': 'fa-couch',
+    'dining': 'fa-utensils',
+    'dining_furniture': 'fa-utensils'
+  };
+
+  (data.budget_breakdown || []).forEach(cat => {
+    const icon = catIcons[cat.category.toLowerCase()] || 'fa-tag';
+    const catDiv = document.createElement('div');
+    catDiv.className = 'category-block';
+
+    let itemsHtml = '';
+    (cat.items || []).forEach(item => {
+      let linksHtml = '';
+      if (item.shopping_links) {
+        for (const [store, link] of Object.entries(item.shopping_links)) {
+          linksHtml += `<a href="${link}" target="_blank" rel="noopener noreferrer" class="shop-pill ${store}"><i class="fa-solid fa-cart-shopping"></i> ${store.toUpperCase()}</a>`;
+        }
+      }
+
+      itemsHtml += `
+        <tr>
+          <td><div class="item-name">${item.name}</div></td>
+          <td><div class="item-desc">${item.description}</div></td>
+          <td><span class="item-price">₹${item.estimated_price}</span></td>
+          <td>${item.quantity || 1}</td>
+          <td><div class="shopping-links-wrap">${linksHtml}</div></td>
+        </tr>
+      `;
+    });
+
+    catDiv.innerHTML = `
+      <div class="category-title">
+        <i class="fa-solid ${icon}" style="color: #2563eb;"></i> ${cat.category}
+      </div>
+      <div class="category-allocation">Allocation: ₹${(cat.allocation || 0).toFixed(2)}</div>
+      <div style="overflow-x: auto;">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Description</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Shopping Links</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+    catContainer.appendChild(catDiv);
+  });
+
+  // Calculation Table
+  const calcTbody = document.getElementById('calcTableBody');
+  calcTbody.innerHTML = '';
+  (data.calculation_table || []).forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${row.category}</strong></td>
+      <td>${row.items_count}</td>
+      <td>₹${row.total_cost.toFixed(2)}</td>
+      <td><span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-weight: 600;">${row.percentage_of_budget}%</span></td>
+    `;
+    calcTbody.appendChild(tr);
+  });
+
+  // Suggestions List
+  const suggList = document.getElementById('suggestionsList');
+  suggList.innerHTML = '';
+  (data.additional_suggestions || []).forEach(sugg => {
+    const li = document.createElement('li');
+    li.innerText = sugg;
+    suggList.appendChild(li);
+  });
+}
+</script>
+{% endblock %}
